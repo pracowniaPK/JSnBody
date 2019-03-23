@@ -19,6 +19,20 @@ var bgColor = 'rgba(255,255,255, 0.05)';
 var n = 12;
 var G = 0.1;
 
+function setup() {
+	createCanvas(dispSize, dispSize);
+	noStroke();
+	setupInterface();
+	resetSim();
+}
+
+function draw() {
+	simulationStep();
+	drawBodies();
+	updateAndDrawCOM();
+	updateAndDrawKE();
+}
+
 class Body {
 	constructor(mass, v) {
 		this.rx = Math.random() * height;
@@ -46,16 +60,7 @@ function updateSim() {
 	G = gSlider.value() / 100;
 }
 
-function interfaceLineUp(iList, offsetX, offsetY) {
-	for (var element in iList){
-		iList[element].position(offsetX, height + element * offsetY);
-	}
-}
-
-function setup() {
-	createCanvas(dispSize, dispSize);
-	noStroke();
-
+function setupInterface() {
 	resetButton = createButton('Reset');
 	resetButton.mouseClicked(resetSim);
 	updateButton = createButton('Update');
@@ -63,12 +68,15 @@ function setup() {
 	wallBounceCheckbox = createCheckbox('Wall bounce', false);
 	gSlider = createSlider(0, 100, 10); // *100
 	interfaceLineUp([resetButton, updateButton, wallBounceCheckbox, gSlider], 20, 30);
-
-	resetSim();
 }
 
-function draw() {
-	// force update
+function interfaceLineUp(iList, offsetX, offsetY) {
+	for (var element in iList){
+		iList[element].position(offsetX, height + element * offsetY);
+}
+}
+
+function simulationStep(){
 	for (var i = 0; i < bodyTable.length; i++){
 		bodyTable[i].ax = 0;
 		bodyTable[i].ay = 0;
@@ -86,13 +94,11 @@ function draw() {
 			}
         }
     }
-	
-	// position update
 	for (i = 0; i < bodyTable.length; i++){
 		bodyTable[i].vx += bodyTable[i].ax;
 		bodyTable[i].vy += bodyTable[i].ay;
-		bodyTable[i].rx += bodyTable[i].vx;
-		bodyTable[i].ry += bodyTable[i].vy;
+		bodyTable[i].rx += bodyTable[i].vx + bodyTable[i].ax ** 2;
+		bodyTable[i].ry += bodyTable[i].vy + bodyTable[i].ay ** 2;
 		
 		if (wallBounce) {
 			if (bodyTable[i].rx < 0 || bodyTable[i].rx > height)
@@ -101,14 +107,17 @@ function draw() {
 				bodyTable[i].vy = (-1) * bodyTable[i].vy;
 		}
 	}
+}
 
-	// draw bodies
+function drawBodies(){
 	for (i = 0; i < bodyTable.length; i++){
         fill(bodyColor);
 		ellipse(bodyTable[i].rx, bodyTable[i].ry, 2 * Math.sqrt(bodyTable[i].mass));
 	}
+	background(bgColor);
+}
 
-	// update center of mass
+function updateAndDrawCOM() {
 	if (showcom) {    
 		var mx = 0;
 		var my = 0;
@@ -121,8 +130,9 @@ function draw() {
 		fill(comColor);
 		ellipse(mx / mm, my / mm, 1);
 	}
+}
 
-	// update and draw kinetic energy
+function updateAndDrawKE() {
 	if (showke){
 		stroke(comColor);
 		var ke = 0;
@@ -133,7 +143,6 @@ function draw() {
 		ellipse(frameCount % width, height - (3 * ke), 2);
 		noStroke();
 	}	
-	background(bgColor);
 }
 
 // function mouseClicked() {
